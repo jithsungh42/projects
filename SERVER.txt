@@ -1,0 +1,81 @@
+//SERVER
+// g++ server.cpp -o server -lws2_32 -std=c++11
+// ./server.exe
+#include<iostream>
+#include<WinSock2.h>
+#include<cstring>
+using namespace std;
+#pragma comment(lib, "ws2_32.lib");
+int main(){
+    WSADATA wsd;
+    if(WSAStartup(MAKEWORD(2,2),&wsd)!= 0){
+        cout<<"Failed to initialize winsock";
+        return 0;
+    }
+
+    SOCKET server=socket(AF_INET,SOCK_STREAM,0);
+    if(server == INVALID_SOCKET){
+        cout<<"Failed to create socket";
+        WSACleanup();
+        return 0;
+    }
+
+    sockaddr_in sock;
+    sock.sin_family=AF_INET;
+    sock.sin_port=htons(12345);
+    sock.sin_addr.s_addr = inet_addr("10.1.44.124");
+    
+    if(bind(server, (sockaddr*)&sock,sizeof(sock)) == SOCKET_ERROR ){
+        cout<<"Error binding socket\n";
+        closesocket(server);
+        WSACleanup();
+        return 0;
+    }
+
+    if( listen(server, 1) == SOCKET_ERROR ){
+        cout<<"Error looking for connections";
+        closesocket(server);
+        WSACleanup();
+        return 0;
+    }
+
+    cout<<"Server looking for connections...\n";
+
+    SOCKET client= accept(server,NULL,NULL);
+    if( client == INVALID_SOCKET){
+        cout<<"Error while connecting";
+        closesocket(server);
+        WSACleanup();
+        return 0;
+    }
+
+    cout<<"Connection accepted\n";
+
+    while( !0 ){
+        char signal[1000]={0};
+        cout<<"typing...\r";
+        
+        if(recv(client,signal,sizeof(signal),0) == SOCKET_ERROR){
+            cout<<"Error recieving message";
+            break;
+        }
+        if( strcmp(signal,"exit") == 0){
+            break;
+        }
+        cout<<"client: " <<signal <<endl;
+
+        cout<<"server: ";
+        cin.getline(signal,sizeof(signal));
+        if( strcmp(signal,"exit") == 0){
+            break;
+        }
+        if(send(client,signal,sizeof(signal),0) == SOCKET_ERROR){
+            cout<<"Error sending message";
+            break;
+        }
+    }
+    closesocket(client);
+    closesocket(server);
+    WSACleanup();
+    return 0;
+}

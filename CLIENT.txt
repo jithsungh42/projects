@@ -1,0 +1,57 @@
+//CLIENT
+// g++ client.cpp -o client -lws2_32 -std=c++11
+// ./client.exe
+#include<iostream>
+#include<winsock2.h>
+#include<cstring>
+#pragma comment(lib,"wins2_32.lib");
+using namespace std;
+
+int main(){
+    WSADATA wsd;
+    if( WSAStartup(MAKEWORD(2,2),&wsd) != 0){
+        cout<<"Error initializing winsock";
+        WSACleanup();
+        return 0;
+    }
+    SOCKET client= socket(AF_INET,SOCK_STREAM,0);
+    if(client== INVALID_SOCKET){
+        cout<<"Error creating socket";
+        WSACleanup();
+        return 0;
+    }
+
+    sockaddr_in sock;
+    sock.sin_family=AF_INET;
+    sock.sin_port=htons(12345);
+    sock.sin_addr.s_addr=inet_addr("192.168.29.126");
+
+    if(connect( client,(sockaddr*)&sock,sizeof(sock))== INVALID_SOCKET){
+        cout<<"Error connecting to server";
+        WSACleanup();
+        closesocket(client);
+        return 0;
+    }
+    cout<<"Connented to server: \n";
+    while(!0){
+        char signal[1000]={0};
+        cout<<"client: ";
+        cin.getline(signal,sizeof(signal));
+        if(strcmp(signal,"exit")==0){
+            break;
+        }
+        if(send(client,signal,sizeof(signal),0)== SOCKET_ERROR){
+            cout<<"Error sending message";
+            break;
+        }
+        cout<<"typing...\r";
+        if(recv(client,signal,sizeof(signal),0)==SOCKET_ERROR){
+            cout<<"Error recieving message";
+            break;
+        }
+        cout<<"server: "<<signal<<" "<<endl;
+    }
+    closesocket(client);
+    WSACleanup();
+    return 0;
+}
